@@ -5,17 +5,17 @@
 vJoyID := 1
 
 ; Create an object from vJoy Interface Class.
-ovJoy := new CvJoyInterface()
+vJoyInterface := new CvJoyInterface()
 
 ; Was vJoy installed and the DLL Loaded?
-if (!ovJoy.vJoyEnabled()){
+if (!vJoyInterface.vJoyEnabled()){
 	; Show log of what happened
-	Msgbox % ovJoy.LoadLibraryLog
+	Msgbox % vJoyInterface.LoadLibraryLog
 	ExitApp
 }
 
-; The object ovJoy.Devices[<device number>] contains helper functions to make managing vjoy devices easier.
-myStick := ovJoy.Devices[vJoyID]
+; The object vJoyInterface.Devices[<device number>] contains helper functions to make managing vjoy devices easier.
+myStick := vJoyInterface.Devices[vJoyID]
 
 ; If using the helper functions, it will automatically try to Acquire, and fail silently (Optionally to debug)
 ;myStick.Acquire()
