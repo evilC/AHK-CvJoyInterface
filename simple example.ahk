@@ -19,7 +19,7 @@ myStick := vJoyInterface.Devices[vJoyID]
 
 ; If using the helper functions, it will automatically try to Acquire, and fail silently (Optionally to debug)
 ;myStick.Acquire()
-myStick.SetAxisByIndex(1,16384)
+myStick.SetAxisByIndex(1,vJoyInterface.PercentTovJoy(50))
 
 ; Just for the fun of it, check if we actually have control of the stick
 
@@ -38,12 +38,12 @@ Return
 
 F11::
 	; Refer to the stick by name, move it to the left
-	myStick.SetAxisByName("x",0)
+	myStick.SetAxisByName("x",vJoyInterface.PercentTovJoy(0))
 	SoundBeep
 	return
 
 F12::
 	; Refer to the stick by index, move it to the right
-	myStick.SetAxisByIndex(1,32767)
+	myStick.SetAxisByIndex(1,vJoyInterface.PercentTovJoy(100))
 	SoundBeep
 	return

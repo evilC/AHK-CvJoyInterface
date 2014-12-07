@@ -64,8 +64,13 @@ Class CvJoyInterface {
 		; Acquire the device
 		Acquire(){
 			ret := this.Interface.AcquireVJD(this.DeviceID)
-			if (!ret && this.Interface.DebugMode){
-				OutputDebug, % "Error in " A_ThisFunc "`nDeviceID = " this.DeviceID ", ErrorLevel: " ErrorLevel ", Device Status: " this.GetStatusName()
+			if (ret){
+				; Reset the Device so it centers
+				this.Interface.ResetVJD(this.DeviceID)
+			} else {
+				if (this.Interface.DebugMode) {
+					OutputDebug, % "Error in " A_ThisFunc "`nDeviceID = " this.DeviceID ", ErrorLevel: " ErrorLevel ", Device Status: " this.GetStatusName()
+				}
 			}
 			return ret
 		}
@@ -140,6 +145,15 @@ Class CvJoyInterface {
 		if (this.hModule){
 			DllCall("FreeLibrary", "Ptr", this.hModule)
 		}
+	}
+
+	; ===== Helper Functions
+	PercentTovJoy(percent){
+		return percent * 327.68
+	}
+
+	vJoyToPercent(vJoy){
+		return vJoy / 327.68
 	}
 
 	; ===== DLL loading / vJoy Install detection
