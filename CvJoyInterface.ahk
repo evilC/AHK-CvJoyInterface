@@ -41,6 +41,15 @@ Class CvJoyInterface {
 			this.Relinquish()
 		}
 
+		CheckAcquired(){
+			if (!this.IsOwned){
+				if(!this.Acquire()){
+					return 0
+				}
+			}
+			return 1
+		}
+
 		GetStatus(){
 			return this.Interface.GetVJDStatus(this.DeviceID)
 		}
@@ -80,6 +89,18 @@ Class CvJoyInterface {
 			return this.Interface.RelinquishVJD(this.DeviceID)
 		}
 
+		Reset(){
+			this.Interface.ResetVJD(this.DeviceID)
+		}
+
+		ResetButtons(){
+			this.Interface.ResetButtons(this.DeviceID)
+		}
+
+		ResetPovs(){
+			this.Interface.ResetButtons(this.DeviceID)
+		}
+
 		; Does the device exist or not?
 		IsEnabled(){
 			state := this.GetStatus()
@@ -94,32 +115,41 @@ Class CvJoyInterface {
 
 		; Set Axis by Index number.
 		; eg x = 1, y = 2, z = 3, rx = 4
-		SetAxisByIndex(index, axis_val){
-			if (!this.IsOwned){
-				if(!this.Acquire()){
-					return 0
-				}
+		SetAxisByIndex(axis_val, index){
+			if (!this.CheckAcquired()){
+				return 0
 			}
-			ret := this.Interface.SetAxis(axis_val, this.DeviceID, this.Interface.AxisIndex[index])
-			if (!ret && this.Interface.DebugMode) {
-				OutputDebug, % "Error in " A_ThisFunc "`nindex = " index ", axis_val = " axis_val
-			}
-			return ret
+			return this.Interface.SetAxis(axis_val, this.DeviceID, this.Interface.AxisIndex[index])
 		}
 
 		; Set Axis by Name
 		; eg "x", "y", "z", "rx"
-		SetAxisByName(name, axis_val){
-			if (!this.IsOwned){
-				if(!this.Acquire()){
-					return 0
-				}
+		SetAxisByName(axis_val, name){
+			if (!this.CheckAcquired()){
+				return 0
 			}
-			ret := this.Interface.SetAxis(axis_val, this.DeviceID, this.Interface.AxisAssoc[name])
-			if (!ret && this.Interface.DebugMode) {
-				OutputDebug, % "Error in " A_ThisFunc "`nname = " name ", axis_val = " axis_val
+			return this.Interface.SetAxis(axis_val, this.DeviceID, this.Interface.AxisAssoc[name])
+		}
+
+		SetBtn(btn_val, btn){
+			if (!this.CheckAcquired()){
+				return 0
 			}
-			return ret
+			return this.Interface.SetBtn(btn_val, this.DeviceID, btn)
+		}
+
+		SetDiscPov(pov_val, pov){
+			if (!this.CheckAcquired()){
+				return 0
+			}
+			return this.Interface.SetDiscPov(pov_val, this.DeviceID, pov)
+		}
+		
+		SetContPov(pov_val, pov){
+			if (!this.CheckAcquired()){
+				return 0
+			}
+			return this.Interface.SetContPov(pov_val, this.DeviceID, pov)
 		}
 	}
 
