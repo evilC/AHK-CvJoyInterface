@@ -1,9 +1,6 @@
 #SingleInstance, force
 #include CvJoyInterface.ahk
 
-; select which stick we are working with
-vJoyID := 1
-
 ; Create an object from vJoy Interface Class.
 vJoyInterface := new CvJoyInterface()
 
@@ -14,36 +11,47 @@ if (!vJoyInterface.vJoyEnabled()){
 	ExitApp
 }
 
-; The object vJoyInterface.Devices[<device number>] contains helper functions to make managing vjoy devices easier.
-myStick := vJoyInterface.Devices[vJoyID]
+; Create The GUI
+Gui, Add, Text, x20 y10, vJoy ID
+Gui, Add, DropDownList, x80 yp-2 w50 vVJoyID gOptionChanged, 1||2|3|4|5|6|7|8|9|10|11|12|13|14|15|16
+Gui, Add, Text, x20 y30, Status:
+Gui, Add, Text, x80 yp vStickStatus w50 Center, 
+Gui, Show, W150
+OnExit, GuiClose
 
-; If using the helper functions, it will automatically try to Acquire, and fail silently (Optionally to debug)
-;myStick.Acquire()
-myStick.SetAxisByIndex(vJoyInterface.PercentTovJoy(50),1)
+; Fire OptionChanged to Acquire Stick
+Gosub, OptionChanged
 
-; Just for the fun of it, check if we actually have control of the stick
-
-; Check the state of our stick
-if (!myStick.IsAvailable()){
-	msgbox % "Virtual Stick " vJoyID " is not available, status is: " myStick.GetStatusName()
-	ExitApp
-}
-
-if (!myStick.IsOwned){
-	msgbox % "Could not acquire stick id " vJoyID ".`nErrorLevel: " ErrorLevel
-	ExitApp
-}
-
+; End Startup Sequence
 Return
 
+; When the GUI changes (or at the start, run this)
+OptionChanged:
+	Gui, Submit, NoHide 	; Pull VjoyID through from GUI
+	; grab copy of helper object for this stick
+	myStick := vJoyInterface.Devices[vJoyID]
+
+	; Acquire the stick
+	; Seeing as vJoyInterface.SingleStickMode defaults to 0, if another stick is already Acquired, it will be automatically Relinquished
+	mystick.Acquire()
+
+	; Update status of this stick in the GUI
+	GuiControl, ,StickStatus, % myStick.GetStatusName()
+	Return
+
+; Hotkeys
 F11::
-	; Refer to the stick by name, move it to the left
-	myStick.SetAxisByName(JoyInterface.PercentTovJoy(0),"x")
+	; Refer to the stick by name, move it to 0%
+	myStick.SetAxisByName(0,"x")
 	SoundBeep
 	return
 
 F12::
-	; Refer to the stick by index, move it to the right
+	; Refer to the stick by index (axis number), move it to 100% (32768)
 	myStick.SetAxisByIndex(vJoyInterface.PercentTovJoy(100),1)
 	SoundBeep
 	return
+
+; Quit when we exit the GUI
+GuiClose:
+	ExitApp

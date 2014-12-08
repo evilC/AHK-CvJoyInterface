@@ -1,12 +1,15 @@
 
 Class CvJoyInterface {
 	DebugMode := 0
-	LibraryLoaded := 0
-	LoadLibraryLog := ""
-	hModule := 0
-	Devices := []
+	SingleStickMode := 1 	; If set to 1, helper classes will automatically relinquish existing vjoy device on attempting to acquire one not connected.
+	ResetOnAcquire := 1 	; Resets Devices to vjoy norms on Acquire via helper classes.
+	ResetOnRelinquish := 1 	; Resets Devices to vjoy norms on Relinquish via helper classes.
+	LibraryLoaded := 0 		; Did the Library Load OK when the class Instantiated?
+	LoadLibraryLog := ""	; If Not, holds log of why it failed.
+	hModule := 0 			; handle to DLL
+	Devices := []			; Array for Helper Classes of Devices
 
-	VJD_MAXDEV := 16
+	VJD_MAXDEV := 16		; Max Number of Devices vJoy Supports
  
 	; ported from VjdStat in vjoyinterface.h
 	VJD_STAT_OWN := 0   ; The  vJoy Device is owned by this application.
@@ -15,7 +18,7 @@ Class CvJoyInterface {
 	VJD_STAT_MISS := 3  ; The  vJoy Device is missing. It either does not exist or the driver is down.
 	VJD_STAT_UNKN := 4  ; Unknown
  
-	; HID Descriptor definitions(ported from public.h
+	; HID Descriptor definitions(ported from public.h)
 	HID_USAGE_X := 0x30
 	HID_USAGE_Y := 0x31
 	HID_USAGE_Z := 0x32
@@ -25,8 +28,9 @@ Class CvJoyInterface {
 	HID_USAGE_SL0:= 0x36
 	HID_USAGE_SL1:= 0x37
 
-	AxisIndex := [0x30,0x31,0x32,0x33,0x34,0x35,0x36,0x37]
-	AxisAssoc := {x:0x30, y:0x31, z:0x32, rx:0x33, ry:0x34, rz: 0x35, sl1:0x36, sl2:0x37}
+	; Handy lookups to axis HID_USAGE values
+	AxisIndex := [0x30,0x31,0x32,0x33,0x34,0x35,0x36,0x37]	; Index (Axis Number) to HID Descriptor
+	AxisAssoc := {x:0x30, y:0x31, z:0x32, rx:0x33, ry:0x34, rz: 0x35, sl1:0x36, sl2:0x37} ; Name (eg "x", "y", "z", "sl1") to HID Descriptor
 
 	; ===== Device helper subclass.
 	Class CvJoyDevice {
@@ -39,15 +43,6 @@ Class CvJoyInterface {
 
 		__Delete(){
 			this.Relinquish()
-		}
-
-		CheckAcquired(){
-			if (!this.IsOwned){
-				if(!this.Acquire()){
-					return 0
-				}
-			}
-			return 1
 		}
 
 		GetStatus(){
@@ -72,8 +67,22 @@ Class CvJoyInterface {
 
 		; Acquire the device
 		Acquire(){
+			if (this.IsOwned){
+				return 1
+			}
+			if (this.Interface.SingleStickMode){
+				Loop % this.Interface.Devices.MaxIndex() {
+					if (A_Index == this.DeviceID){
+						Continue
+					}
+					if (this.Interface.Devices[A_Index].IsOwned){
+						this.Interface.Devices[A_Index].Relinquish()
+						break
+					}
+				}
+			}
 			ret := this.Interface.AcquireVJD(this.DeviceID)
-			if (ret){
+			if (ret && this.Interface.ResetOnAcquire){
 				; Reset the Device so it centers
 				this.Interface.ResetVJD(this.DeviceID)
 			} else {
@@ -84,8 +93,11 @@ Class CvJoyInterface {
 			return ret
 		}
 
-		; Relinquish the device
+		; Relinquish the device, resetting it if Owned
 		Relinquish(){
+			if (this.IsOwned && this.Interface.ResetOnRelinquish){
+				this.Interface.ResetVJD(this.DeviceID)
+			}
 			return this.Interface.RelinquishVJD(this.DeviceID)
 		}
 
@@ -116,7 +128,7 @@ Class CvJoyInterface {
 		; Set Axis by Index number.
 		; eg x = 1, y = 2, z = 3, rx = 4
 		SetAxisByIndex(axis_val, index){
-			if (!this.CheckAcquired()){
+			if (!this.Acquire()){
 				return 0
 			}
 			return this.Interface.SetAxis(axis_val, this.DeviceID, this.Interface.AxisIndex[index])
@@ -125,28 +137,28 @@ Class CvJoyInterface {
 		; Set Axis by Name
 		; eg "x", "y", "z", "rx"
 		SetAxisByName(axis_val, name){
-			if (!this.CheckAcquired()){
+			if (!this.Acquire()){
 				return 0
 			}
 			return this.Interface.SetAxis(axis_val, this.DeviceID, this.Interface.AxisAssoc[name])
 		}
 
 		SetBtn(btn_val, btn){
-			if (!this.CheckAcquired()){
+			if (!this.Acquire()){
 				return 0
 			}
 			return this.Interface.SetBtn(btn_val, this.DeviceID, btn)
 		}
 
 		SetDiscPov(pov_val, pov){
-			if (!this.CheckAcquired()){
+			if (!this.Acquire()){
 				return 0
 			}
 			return this.Interface.SetDiscPov(pov_val, this.DeviceID, pov)
 		}
-		
+
 		SetContPov(pov_val, pov){
-			if (!this.CheckAcquired()){
+			if (!this.Acquire()){
 				return 0
 			}
 			return this.Interface.SetContPov(pov_val, this.DeviceID, pov)
@@ -360,7 +372,8 @@ Class CvJoyInterface {
 	}
 
 	RelinquishVJD(rID){
-		this.Devices[rID].IsOwned := DllCall("vJoyInterface\RelinquishVJD", "UInt", rID)
+		DllCall("vJoyInterface\RelinquishVJD", "UInt", rID)
+		this.Devices[rID].IsOwned := 0
 		return this.Devices[rID].IsOwned
 	}
 
