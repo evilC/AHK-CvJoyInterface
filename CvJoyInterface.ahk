@@ -223,7 +223,7 @@ Class CvJoyInterface {
 		; Play hunt-the-DLL
 		DllFile := "vJoyInterface.dll"
 		this.LoadLibraryLog := "vJoy Install Detected. Trying to locate correct " DllFile "...`n"
-		CheckLocations := [vJoyFolder DllFile, vJoyFolder "Feeder\" DllFile, "vjoy_lib\x86\" DllFile, "vjoy_lib\x64\" DllFile]
+		CheckLocations := [vJoyFolder "x64\" DllFile, vJoyFolder "x86\" DllFile]
 
 		hModule := 0
 		Loop % CheckLocations.Maxindex() {
@@ -234,11 +234,17 @@ Class CvJoyInterface {
 				if (hModule){
 					this.hModule := hModule
 					this.LoadLibraryLog .= "OK.`n"
-					this.LibraryLoaded := 1
-					if (this.DebugMode){
-						OutputDebug, % this.LoadLibraryLog
+					this.LoadLibraryLog .= "Checking driver enabled... "
+					if (DLLCall("vJoyInterface\vJoyEnabled")){
+						this.LibraryLoaded := 1
+						this.LoadLibraryLog .= "OK.`n"
+						if (this.DebugMode){
+							OutputDebug, % this.LoadLibraryLog
+						}
+						return 1
+					} else {
+						this.LoadLibraryLog .= "FAILED.`n"
 					}
-					return 1
 				} else {
 					this.LoadLibraryLog .= "FAILED.`n"
 				}
