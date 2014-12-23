@@ -20,6 +20,17 @@ myStick := vJoyInterface.Devices[1]
 Return
 
 ; Hotkeys
+F10::
+	; On press of F10 try and press button 1
+	myStick.SetBtn(1,1)
+	Return
+
+F10 up::
+	; On release of F10, release button 1
+	myStick.SetBtn(0,1)
+	Return
+
+; Hotkeys
 F11::
 	; Refer to the stick by name, move it to 0%
 	myStick.SetAxisByName(0,"x")
