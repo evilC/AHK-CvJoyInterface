@@ -1,5 +1,6 @@
 #SingleInstance, force
 #include CvJoyInterface.ahk
+;#include <CvJoyInterface>
 
 ; Create an object from vJoy Interface Class.
 vJoyInterface := new CvJoyInterface()
