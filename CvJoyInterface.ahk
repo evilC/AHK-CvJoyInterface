@@ -31,6 +31,7 @@ Class CvJoyInterface {
 	; Handy lookups to axis HID_USAGE values
 	AxisIndex := [0x30,0x31,0x32,0x33,0x34,0x35,0x36,0x37]	; Index (Axis Number) to HID Descriptor
 	AxisAssoc := {x:0x30, y:0x31, z:0x32, rx:0x33, ry:0x34, rz: 0x35, sl1:0x36, sl2:0x37} ; Name (eg "x", "y", "z", "sl1") to HID Descriptor
+	AxisNames := ["X","Y","Z","RX","RY","RZ","SL0","SL1"]
 
 	; ===== Device helper subclass.
 	Class CvJoyDevice {
