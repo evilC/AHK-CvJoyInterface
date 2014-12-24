@@ -220,10 +220,25 @@ Class CvJoyInterface {
 			return 0
 		}
 
-		; Play hunt-the-DLL
+		if (A_PtrSize == 8){
+			; 64-Bit AHK
+			DllFolder := this.RegRead64("HKEY_LOCAL_MACHINE", "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{8E31F76F-74C3-47F1-9550-E041EEDC5FBB}_is1", "DllX64Location")
+		} else {
+			; 32-Bit AHK
+			DllFolder := this.RegRead64("HKEY_LOCAL_MACHINE", "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{8E31F76F-74C3-47F1-9550-E041EEDC5FBB}_is1", "DllX86Location")
+		}
+
+		if (!DllFolder){
+			; Could not find registry entry. vJoy version < 2.0.4 241214 ? Advise vJoy update.
+			this.LoadLibraryLog .= "A vJoy install was found in " vJoyFolder ", but it appears to be an old version.`nPlease update vJoy to the latest version from `n`nhttp://vjoystick.sourceforge.net."
+			return 0
+		}
+
+		DllFolder .= "\"
+
 		DllFile := "vJoyInterface.dll"
-		this.LoadLibraryLog := "vJoy Install Detected. Trying to locate correct " DllFile "...`n"
-		CheckLocations := [vJoyFolder "x64\" DllFile, vJoyFolder "x86\" DllFile]
+		this.LoadLibraryLog := "vJoy Install Detected. Trying to load " DllFile "...`n"
+		CheckLocations := [DllFolder DllFile]
 
 		hModule := 0
 		Loop % CheckLocations.Maxindex() {
@@ -235,9 +250,10 @@ Class CvJoyInterface {
 					this.hModule := hModule
 					this.LoadLibraryLog .= "OK.`n"
 					this.LoadLibraryLog .= "Checking driver enabled... "
-					if (DLLCall("vJoyInterface\vJoyEnabled")){
+					if (this.vJoyEnabled()){
 						this.LibraryLoaded := 1
 						this.LoadLibraryLog .= "OK.`n"
+						this.LoadLibraryLog .= "Loaded vJoy DLL version " this.GetvJoyVersion() "`n"
 						if (this.DebugMode){
 							OutputDebug, % this.LoadLibraryLog
 						}
@@ -252,7 +268,7 @@ Class CvJoyInterface {
 				this.LoadLibraryLog .= "NOT FOUND.`n"
 			}
 		}
-		this.LoadLibraryLog .= "`nFailed to load valid  " DllFile "`nThis could be because you have a 64-bit system but the script needs a 32-bit DLL"
+		this.LoadLibraryLog .= "`nFailed to load valid  " DllFile "`n"
 		this.LibraryLoaded := 0
 		return 0
 	}
