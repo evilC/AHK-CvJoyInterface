@@ -17,7 +17,7 @@ Class CvJoyInterface {
 	VJD_STAT_BUSY := 2  ; The  vJoy Device is owned by another application. It cannot be acquired by this application.
 	VJD_STAT_MISS := 3  ; The  vJoy Device is missing. It either does not exist or the driver is down.
 	VJD_STAT_UNKN := 4  ; Unknown
- 
+
 	; HID Descriptor definitions(ported from public.h)
 	HID_USAGE_X := 0x30
 	HID_USAGE_Y := 0x31
@@ -36,15 +36,6 @@ Class CvJoyInterface {
 	; ===== Device helper subclass.
 	Class CvJoyDevice {
 		IsOwned := 0
-
-		__New(id, parent){
-			this.DeviceID := id
-			this.Interface := parent
-		}
-
-		__Delete(){
-			this.Relinquish()
-		}
 
 		GetStatus(){
 			return this.Interface.GetVJDStatus(this.DeviceID)
@@ -164,6 +155,17 @@ Class CvJoyInterface {
 			}
 			return this.Interface.SetContPov(pov_val, this.DeviceID, pov)
 		}
+
+		; Constructor
+		__New(id, parent){
+			this.DeviceID := id
+			this.Interface := parent
+		}
+
+		; Destructor
+		__Delete(){
+			this.Relinquish()
+		}
 	}
 
 	; ===== Constructors / Destructors
@@ -191,6 +193,7 @@ Class CvJoyInterface {
 	}
 
 	; ===== Helper Functions
+	; Converts vJoy range (0->32768 to a range like an AHK input 0->100)
 	PercentTovJoy(percent){
 		return percent * 327.68
 	}
@@ -201,7 +204,7 @@ Class CvJoyInterface {
 
 	; ===== DLL loading / vJoy Install detection
 
-	; Load lib from already load or current/system directory
+	; Load the vJoyInterface DLL.
 	LoadLibrary() {
 		;Global hModule
 
@@ -220,6 +223,8 @@ Class CvJoyInterface {
 			return 0
 		}
 
+		; Try to find location of correct DLL.
+		; vJoy versions prior to 2.0.4 241214 lack these registry keys - if key not found, advise update.
 		if (A_PtrSize == 8){
 			; 64-Bit AHK
 			DllFolder := this.RegRead64("HKEY_LOCAL_MACHINE", "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{8E31F76F-74C3-47F1-9550-E041EEDC5FBB}_is1", "DllX64Location")
@@ -229,13 +234,14 @@ Class CvJoyInterface {
 		}
 
 		if (!DllFolder){
-			; Could not find registry entry. vJoy version < 2.0.4 241214 ? Advise vJoy update.
+			; Could not find registry entry. Advise vJoy update.
 			this.LoadLibraryLog .= "A vJoy install was found in " vJoyFolder ", but it appears to be an old version.`nPlease update vJoy to the latest version from `n`nhttp://vjoystick.sourceforge.net."
 			return 0
 		}
 
 		DllFolder .= "\"
 
+		; All good so far, try and load the DLL
 		DllFile := "vJoyInterface.dll"
 		this.LoadLibraryLog := "vJoy Install Detected. Trying to load " DllFile "...`n"
 		CheckLocations := [DllFolder DllFile]
@@ -273,6 +279,7 @@ Class CvJoyInterface {
 		return 0
 	}
 
+	; ===================================== Registry Reading library START ==================================================================
 	; x64 compatible registry read from http://www.autohotkey.com/board/topic/36290-regread64-and-regwrite64-no-redirect-to-wow6432node/
 	RegRead64(sRootKey, sKeyName, sValueName = "", DataMaxSize=1024) {
 		HKEY_CLASSES_ROOT   := 0x80000000   ; http://msdn.microsoft.com/en-us/library/aa393286.aspx
@@ -347,8 +354,9 @@ Class CvJoyInterface {
 		DllCall("Advapi32.dll\RegCloseKey", "uint", hKey)
 		return sValue
 	}
-	 
-	ExtractData(pointer) {  ; http://www.autohotkey.com/forum/viewtopic.php?p=91578#91578 SKAN
+
+	; http://www.autohotkey.com/forum/viewtopic.php?p=91578#91578 SKAN
+	ExtractData(pointer) {
 		Loop {
 				errorLevel := ( pointer+(A_Index-1) )
 				Asc := *( errorLevel )
@@ -357,6 +365,8 @@ Class CvJoyInterface {
 			}
 		Return String
 	}
+
+	; ===================================== Registry Reading library END ==================================================================
 
 	; ===== vJoy Interface DLL call wrappers
 	; In the order detailed in the vJoy SDK's Interface Function Reference
