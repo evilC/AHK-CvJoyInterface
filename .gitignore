@@ -5,3 +5,5 @@
 *.scc
 *.png
 *.tmp.*
+Setup.ahk
+!Setup*.exe
