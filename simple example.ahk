@@ -2,8 +2,7 @@
 ; Minimal error checking (Just check if DLL loaded), just the bare essentials code-wise.
 
 #SingleInstance, force
-#include CvJoyInterface.ahk
-;#include <CvJoyInterface>
+#include <CvJoyInterface>
 
 ; Create an object from vJoy Interface Class.
 vJoyInterface := new CvJoyInterface()
