@@ -217,21 +217,26 @@ Class CvJoyInterface {
 
 		; Check if vJoy is installed. Even with the DLL, if vJoy is not installed it will not work...
 		; Find vJoy install folder by looking for registry key.
-		vJoyFolder := this.RegRead64("HKEY_LOCAL_MACHINE", "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{8E31F76F-74C3-47F1-9550-E041EEDC5FBB}_is1", "InstallLocation")
+		if (A_Is64bitOS && A_PtrSize != 8){
+			SetRegView 64
+		}
+		RegRead vJoyFolder, HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{8E31F76F-74C3-47F1-9550-E041EEDC5FBB}_is1, InstallLocation
+
 		if (!vJoyFolder){
 			this.LoadLibraryLog .= "ERROR: Could not find the vJoy Registry Key.`n`nvJoy does not appear to be installed.`nPlease ensure you have installed vJoy from`n`nhttp://vjoystick.sourceforge.net."
 			return 0
 		}
-
+		
 		; Try to find location of correct DLL.
 		; vJoy versions prior to 2.0.4 241214 lack these registry keys - if key not found, advise update.
 		if (A_PtrSize == 8){
 			; 64-Bit AHK
-			DllFolder := this.RegRead64("HKEY_LOCAL_MACHINE", "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{8E31F76F-74C3-47F1-9550-E041EEDC5FBB}_is1", "DllX64Location")
+			DllKey := "DllX64Location"
 		} else {
 			; 32-Bit AHK
-			DllFolder := this.RegRead64("HKEY_LOCAL_MACHINE", "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{8E31F76F-74C3-47F1-9550-E041EEDC5FBB}_is1", "DllX86Location")
+			DllKey := "DllX86Location"
 		}
+		RegRead DllFolder, HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{8E31F76F-74C3-47F1-9550-E041EEDC5FBB}_is1, % DllKey
 
 		if (!DllFolder){
 			; Could not find registry entry. Advise vJoy update.
@@ -278,95 +283,6 @@ Class CvJoyInterface {
 		this.LibraryLoaded := 0
 		return 0
 	}
-
-	; ===================================== Registry Reading library START ==================================================================
-	; x64 compatible registry read from http://www.autohotkey.com/board/topic/36290-regread64-and-regwrite64-no-redirect-to-wow6432node/
-	RegRead64(sRootKey, sKeyName, sValueName = "", DataMaxSize=1024) {
-		HKEY_CLASSES_ROOT   := 0x80000000   ; http://msdn.microsoft.com/en-us/library/aa393286.aspx
-		HKEY_CURRENT_USER   := 0x80000001
-		HKEY_LOCAL_MACHINE  := 0x80000002
-		HKEY_USERS          := 0x80000003
-		HKEY_CURRENT_CONFIG := 0x80000005
-		HKEY_DYN_DATA       := 0x80000006
-		HKCR := HKEY_CLASSES_ROOT
-		HKCU := HKEY_CURRENT_USER
-		HKLM := HKEY_LOCAL_MACHINE
-		HKU  := HKEY_USERS
-		HKCC := HKEY_CURRENT_CONFIG
-		
-		REG_NONE                := 0    ; http://msdn.microsoft.com/en-us/library/ms724884.aspx
-		REG_SZ                  := 1
-		REG_EXPAND_SZ           := 2
-		REG_BINARY              := 3
-		REG_DWORD               := 4
-		REG_DWORD_BIG_ENDIAN    := 5
-		REG_LINK                := 6
-		REG_MULTI_SZ            := 7
-		REG_RESOURCE_LIST       := 8
-
-		KEY_QUERY_VALUE := 0x0001   ; http://msdn.microsoft.com/en-us/library/ms724878.aspx
-		KEY_WOW64_64KEY := 0x0100   ; http://msdn.microsoft.com/en-gb/library/aa384129.aspx (do not redirect to Wow6432Node on 64-bit machines)
-		KEY_SET_VALUE   := 0x0002
-		KEY_WRITE       := 0x20006
-		ENC := A_IsUnicode?"W":"A"
-		hKey := "", sValueType := ""
-
-		myhKey := %sRootKey%        ; pick out value (0x8000000x) from list of HKEY_xx vars
-		IfEqual,myhKey,, {      ; Error - Invalid root key
-			ErrorLevel := 3
-			return ""
-		}
-		RegAccessRight := KEY_QUERY_VALUE + KEY_WOW64_64KEY
-		;VarSetCapacity(sValueType, 4)
-		DllCall("Advapi32.dll\RegOpenKeyEx" ENC, "uint", myhKey, "str", sKeyName, "uint", 0, "uint", RegAccessRight, "uint*", hKey)    ; open key
-		DllCall("Advapi32.dll\RegQueryValueEx" ENC, "uint", hKey, "str", sValueName, "uint", 0, "uint*", sValueType, "uint", 0, "uint", 0)     ; get value type
-		If (sValueType == REG_SZ or sValueType == REG_EXPAND_SZ) {
-			VarSetCapacity(sValue, vValueSize:=DataMaxSize)
-			DllCall("Advapi32.dll\RegQueryValueEx" ENC, "uint", hKey, "str", sValueName, "uint", 0, "uint", 0, "str", sValue, "uint*", vValueSize) ; get string or string-exp
-		} Else If (sValueType == REG_DWORD) {
-			VarSetCapacity(sValue, vValueSize:=4)
-			DllCall("Advapi32.dll\RegQueryValueEx" ENC, "uint", hKey, "str", sValueName, "uint", 0, "uint", 0, "uint*", sValue, "uint*", vValueSize)   ; get dword
-		} Else If (sValueType == REG_MULTI_SZ) {
-			VarSetCapacity(sTmp, vValueSize:=DataMaxSize)
-			DllCall("Advapi32.dll\RegQueryValueEx" ENC, "uint", hKey, "str", sValueName, "uint", 0, "uint", 0, "str", sTmp, "uint*", vValueSize)   ; get string-mult
-			sValue := this.ExtractData(&sTmp) "`n"
-			Loop {
-				If (errorLevel+2 >= &sTmp + vValueSize)
-					Break
-				sValue := sValue this.ExtractData( errorLevel+1 ) "`n" 
-			}
-		} Else If (sValueType == REG_BINARY) {
-			VarSetCapacity(sTmp, vValueSize:=DataMaxSize)
-			DllCall("Advapi32.dll\RegQueryValueEx" ENC, "uint", hKey, "str", sValueName, "uint", 0, "uint", 0, "str", sTmp, "uint*", vValueSize)   ; get binary
-			sValue := ""
-			SetFormat, integer, h
-			Loop %vValueSize% {
-				hex := SubStr(Asc(SubStr(sTmp,A_Index,1)),3)
-				StringUpper, hex, hex
-				sValue := sValue hex
-			}
-			SetFormat, integer, d
-		} Else {                ; value does not exist or unsupported value type
-			DllCall("Advapi32.dll\RegCloseKey", "uint", hKey)
-			ErrorLevel := 1
-			return ""
-		}
-		DllCall("Advapi32.dll\RegCloseKey", "uint", hKey)
-		return sValue
-	}
-
-	; http://www.autohotkey.com/forum/viewtopic.php?p=91578#91578 SKAN
-	ExtractData(pointer) {
-		Loop {
-				errorLevel := ( pointer+(A_Index-1) )
-				Asc := *( errorLevel )
-				IfEqual, Asc, 0, Break ; Break if NULL Character
-				String := String . Chr(Asc)
-			}
-		Return String
-	}
-
-	; ===================================== Registry Reading library END ==================================================================
 
 	; ===== vJoy Interface DLL call wrappers
 	; In the order detailed in the vJoy SDK's Interface Function Reference
