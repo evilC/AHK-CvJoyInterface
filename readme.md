@@ -3,7 +3,7 @@ AHK-CvJoyInterface
 
 A simple to use class for AutoHotkey to interface with [Shaul's vJoy](http://vjoystick.sourceforge.net) virtual joystick interface.  
 
-Please make sure you use an up-to-date version of vJoy, it muse be at least version [2.0.4 241214](http://sourceforge.net/projects/vjoystick/files/Beta%202.x/2.0.4%20241214/vJoy_204_241214.exe/download)
+Please make sure you use an up-to-date version of vJoy, it must be at least version [2.0.4 241214](http://sourceforge.net/projects/vjoystick/files/Beta%202.x/2.0.4%20241214/vJoy_204_241214.exe/download)
 
 ### What does it do?
 It allows joystick **Output** from AutoHotkey to a virtual joystick (ie a stick that Windows thinks exists, but doesn't really).
